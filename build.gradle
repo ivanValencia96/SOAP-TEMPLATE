@@ -1,0 +1,58 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '2.7.7-SNAPSHOT'
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+}
+
+group = 'com.gnp.wssoap'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+// tag::xsd[]
+sourceSets {
+	main {
+		java {
+			srcDir 'src/main/java'
+			srcDir 'build/generated-sources/jaxb'
+		}
+	}
+}
+
+task genJaxb {
+	ext.sourcesDir = "src/main/java"
+	ext.schema = "src/main/resources/countries.xsd"
+
+	outputs.dir sourcesDir
+
+	doLast() {
+		project.ant {
+			taskdef name: "xjc", classname: "com.sun.tools.xjc.XJCTask",
+					classpath: configurations.jaxb.asPath
+			mkdir(dir: sourcesDir)
+
+			xjc(destdir: sourcesDir, schema: schema) {
+				arg(value: "-wsdl")
+				produces(dir: sourcesDir, includes: "**/*.java")
+			}
+		}
+	}
+}
+
+compileJava.dependsOn genJaxb
+// end::xsd[]
+
+// tag::jaxb[]
+configurations {
+	jaxb
+}
+
+bootJar {
+	archiveBaseName = 'gs-producing-web-service'
+	archiveVersion =  '0.1.0'
+}
+
+tasks.named('test') {
+	//useJUnitPlatform()
+}
+
+apply from: 'dependencies.gradle'
